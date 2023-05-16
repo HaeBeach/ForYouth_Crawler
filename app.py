@@ -1,9 +1,12 @@
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from datetime import datetime
+import psycopg2
 import time
 
 start_date = "2023-04-01"
+date_format = "%Y-%m-%d"
 
 #크롬 드라이버로 웹 브라우저 실행
 path = "C:\chromedriver_win32\chromedriver.exe"
@@ -25,6 +28,7 @@ driver.execute_script("arguments[0].click()", tag_a)
 #데이터 파싱 loop 시작
 flag = 1
 current_page = 1
+input_data = []
 while flag == 1:
     #paging 처리를 위한 변수 세팅
     paging_area = driver.find_element(By.CLASS_NAME,'pagingWrap')
@@ -37,6 +41,14 @@ while flag == 1:
     for tr in list_tr:
         print("================")
         list_td = tr.find_elements(By.TAG_NAME,'td')
+        values = [
+            int(list_td[0].text),
+            str(list_td[1].text),
+            str(list_td[2].text),
+            datetime.strptime(list_td[3].text, date_format),
+            int(list_td[4].text)
+        ]
+        input_data.append(values)
         print(list_td[0].text)
         print(list_td[1].text)
         print(list_td[2].text)
@@ -73,4 +85,13 @@ while flag == 1:
             print(current_page)
             break
     time.sleep(2)
+
+#DB 저장    
+db = psycopg2.connect(host='localhost', dbname='postgres',user='daewoong',password='',port=5432)
+cursor = db.cursor()
+
+query = "INSERT INTO tb_sh_notice(seq,title,dep_nm,first_cret_dt,inq_cnt)values(%s,%s,%s,%s,%s)"
+cursor.executemany(query, input_data)
+db.commit()
     
+db.close()
