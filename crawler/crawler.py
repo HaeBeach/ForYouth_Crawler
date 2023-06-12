@@ -10,6 +10,7 @@ class Crawler:
     
         start_date = "2023-04-01"
         date_format = "%Y-%m-%d"
+        index = 1
 
         #크롬 드라이버로 웹 브라우저 실행
         path = "C:\chromedriver_win32\chromedriver.exe"
@@ -33,6 +34,16 @@ class Crawler:
         current_page = 1
         input_data = []
         while flag == 1:
+            #페이지 확인
+            page_count_str = driver.find_element(By.CLASS_NAME,'mentcount').text
+            print(page_count_str)
+            str_tmp1 = page_count_str.split('[')
+            str_tmp2 = str_tmp1[1].split('페')
+            str_tmp3 = str_tmp2[0].split('/')
+            
+            #총 건수 확인
+            cnt_tmp = str_tmp1[0].split(' ')
+            
             #paging 처리를 위한 변수 세팅
             paging_area = driver.find_element(By.CLASS_NAME,'pagingWrap')
             list_a = paging_area.find_elements(By.TAG_NAME,'a')
@@ -49,7 +60,9 @@ class Crawler:
                     str(list_td[1].text),
                     str(list_td[2].text),
                     datetime.strptime(list_td[3].text, date_format),
-                    int(list_td[4].text)
+                    int(list_td[4].text),
+                    int(index),
+                    int(cnt_tmp[1])
                 ]
                 input_data.append(values)
                 print(list_td[0].text)
@@ -57,13 +70,11 @@ class Crawler:
                 print(list_td[2].text)
                 print(list_td[3].text)
                 print(list_td[4].text)
+                print(index)
+                print(cnt_tmp[1])
+                index = index + 1
                 
             #마지막 페이지 여부 확인
-            page_count_str = driver.find_element(By.CLASS_NAME,'mentcount').text
-            print(page_count_str)
-            str_tmp1 = page_count_str.split('[')
-            str_tmp2 = str_tmp1[1].split('페')
-            str_tmp3 = str_tmp2[0].split('/')
             if int(str_tmp3[0]) == int(str_tmp3[1]):
                 break
 
@@ -98,7 +109,7 @@ class Crawler:
 
         query = "truncate table tb_sh_notice"
         cursor.execute(query)
-        query = "INSERT INTO tb_sh_notice(seq,title,dep_nm,first_cret_dt,inq_cnt)values(%s,%s,%s,%s,%s)"
+        query = "INSERT INTO tb_sh_notice(seq,title,dep_nm,first_cret_dt,inq_cnt,rnum,all_cnt)values(%s,%s,%s,%s,%s,%s,%s)"
         cursor.executemany(query, input_data)
         db.commit()
             
